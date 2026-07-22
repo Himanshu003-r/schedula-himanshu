@@ -5,6 +5,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/user.module';
 import { AuthModule } from './auth/auth.module';
+import { PatientModule } from './patient/patient.module';
+import { DoctorModule } from './doctor/doctor.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -21,11 +23,13 @@ import { AuthModule } from './auth/auth.module';
         password: config.get<string>('DB_PASSWORD'),
         database: config.get<string>('DB_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true,
+        synchronize: false,
       }),
     }),
     UsersModule,
-    AuthModule
+    AuthModule,
+    PatientModule,
+    DoctorModule
   ],
   controllers: [AppController],
   providers: [AppService],
