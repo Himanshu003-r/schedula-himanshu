@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { User } from 'src/users/entities/user.entity';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
+import { SetSchedulingConfigDto } from './dto/set-scheduling-config.dto';
 
 @Injectable()
 export class DoctorService {
@@ -72,5 +73,22 @@ export class DoctorService {
     await this.doctorRepo.save(doctor);
 
     return { data: doctor };
+  }
+
+  async setSchedulingConfig(userId: string, dto: SetSchedulingConfigDto){
+    const doctor = await this.doctorRepo.findOne({
+      where:{user:{id: userId}}
+    })
+
+    if(!doctor){
+      throw new NotFoundException('Doctor profile does not exist')
+    }
+
+    this.doctorRepo.merge(doctor, dto);
+    await this.doctorRepo.save(doctor)
+
+    return {
+      data: doctor
+    }
   }
 }

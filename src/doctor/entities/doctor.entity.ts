@@ -8,6 +8,11 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
+export enum SchedulingType {
+  STREAM = 'stream',
+  WAVE = 'wave',
+}
+
 @Entity('doctors')
 export class Doctor {
   @PrimaryGeneratedColumn('uuid')
@@ -32,6 +37,18 @@ export class Doctor {
   @Column({ type: 'text', nullable: true })
   profileDetails: string;
 
+  @Column({ type: 'enum', enum: SchedulingType, nullable: true })
+  schedulingType: SchedulingType;
+
+  @Column({ nullable: true })
+  slotDuration: number;
+
+  @Column({ nullable: true })
+  bufferTime: number;
+
+  @Column({ nullable: true })
+  maxAppointments: number;
+  
   @CreateDateColumn()
   createdAt: Date;
 }

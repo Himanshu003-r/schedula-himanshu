@@ -8,6 +8,7 @@ import { currentUser } from 'src/auth/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
+import { SetSchedulingConfigDto } from './dto/set-scheduling-config.dto';
 
 @Controller('doctor/profile')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -28,5 +29,10 @@ export class DoctorController {
   @Get()
   get(@currentUser() user: JwtPayload) {
     return this.doctorService.findByUserId(user.sub);
+  }
+
+  @Patch('scheduling-config')
+  setSchedulingConfig(@currentUser() user: JwtPayload, @Body() dto: SetSchedulingConfigDto) {
+    return this.doctorService.setSchedulingConfig(user.sub, dto);
   }
 }
