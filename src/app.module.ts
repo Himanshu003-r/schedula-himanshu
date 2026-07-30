@@ -9,6 +9,7 @@ import { PatientModule } from './patient/patient.module';
 import { DoctorModule } from './doctor/doctor.module';
 import { AvailabilityModule } from './availability/availability.module';
 import { AppointmentModule } from './appointment/appointment.module';
+import { HealthModule } from './health/health.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -33,7 +34,8 @@ import { AppointmentModule } from './appointment/appointment.module';
     PatientModule,
     DoctorModule,
     AvailabilityModule,
-    AppointmentModule
+    AppointmentModule,
+    HealthModule
   ],
   controllers: [AppController],
   providers: [AppService],
