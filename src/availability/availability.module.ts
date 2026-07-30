@@ -11,6 +11,7 @@ import { Doctor } from 'src/doctor/entities/doctor.entity';
 @Module({
   imports:[TypeOrmModule.forFeature([RecurringAvailability,CustomAvailability,Doctor])],
   providers: [RecurringAvailabilityService,CustomAvailabilityService],
-  controllers: [RecurringAvailabilityController,CustomAvailabilityController]
+  controllers: [RecurringAvailabilityController,CustomAvailabilityController],
+  exports: [RecurringAvailabilityService, CustomAvailabilityService]
 })
 export class AvailabilityModule {}
