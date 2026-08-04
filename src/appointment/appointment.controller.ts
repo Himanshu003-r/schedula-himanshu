@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -15,6 +16,7 @@ import { UserRole } from 'src/users/entities/user.entity';
 import { currentUser } from 'src/auth/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { RescheduleAppointmentDto } from './dto/reschedule-appointment.dto';
 
 @Controller('appointment')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -35,6 +37,11 @@ export class AppointmentController {
   @Delete(':id')
   cancel(@currentUser() user: JwtPayload, @Param('id') id: string) {
     return this.appointmentService.cancel(user.sub, id);
+  }
+
+  @Patch('reschdule/:id')
+  reschdule(@currentUser() user:JwtPayload, @Param('id') id: string, @Body() dto: RescheduleAppointmentDto){
+   return this.appointmentService.reschdule(user.sub,id,dto)
   }
 
   @Roles(UserRole.DOCTOR)

@@ -12,7 +12,12 @@ import { Doctor, SchedulingType } from 'src/doctor/entities/doctor.entity';
 import { Patient } from 'src/patient/entities/patient.entity';
 import { RecurringAvailabilityService } from 'src/availability/services/recurring-availability.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
-import { normalizeTime } from 'src/availability/utils/time.util';
+import {
+  addOneDay,
+  isWithinCutoff,
+  normalizeTime,
+} from 'src/availability/utils/time.util';
+import { RescheduleAppointmentDto } from './dto/reschedule-appointment.dto';
 
 @Injectable()
 export class AppointmentService {
@@ -71,7 +76,15 @@ export class AppointmentService {
       });
 
       if (existingSlot) {
-        throw new ConflictException('This slot is already booked');
+        const suggestion = await this.findNextAvailable(
+          doctor.id,
+          dto.date,
+          doctor.schedulingType,
+        );
+        throw new ConflictException({
+          message: 'This slot is already booked',
+          suggestedSlot: suggestion, 
+        });
       }
 
       const apppointment = this.appointmentRepo.create({
@@ -117,7 +130,15 @@ export class AppointmentService {
         });
 
         if (existingCount >= doctor.maxAppointments) {
-          throw new ConflictException('This window is full');
+          const suggestion = await this.findNextAvailable(
+            doctor.id,
+            dto.date,
+            doctor.schedulingType,
+          );
+          throw new ConflictException({
+            message: 'This slot is already booked',
+            suggestedSlot: suggestion, 
+          });
         }
 
         const appointment = manager.create(Appointment, {
@@ -183,12 +204,18 @@ export class AppointmentService {
       throw new BadRequestException('Appointment is already cancelled');
     }
 
-    const appointmentDate = new Date(
-      `${appointment.date}T${appointment.startTime}:00`,
-    );
+    // const appointmentDate = new Date(
+    //   `${appointment.date}T${appointment.startTime}:00`,
+    // );
 
-    if (appointmentDate.getTime() <= Date.now()) {
-      throw new BadRequestException('Cannot cancel past appointments');
+    // if (appointmentDate.getTime() <= Date.now()) {
+    //   throw new BadRequestException('Cannot cancel past appointments');
+    // }
+
+    if (isWithinCutoff(appointment.date, appointment.startTime)) {
+      throw new BadRequestException(
+        'Cannot cancel within 30 minutes of the appointment',
+      );
     }
 
     appointment.status = AppointmentStatus.CANCELLED;
@@ -199,6 +226,7 @@ export class AppointmentService {
       data: appointment,
     };
   }
+
   async findDoctorAppointment(userId: string) {
     const doctorId = await this.resolveDoctorId(userId);
 
@@ -228,6 +256,215 @@ export class AppointmentService {
     return {
       data: appointments,
     };
+  }
+
+  async reschdule(
+    userId: string,
+    appointmentId: string,
+    dto: RescheduleAppointmentDto,
+  ) {
+    const patientId = await this.resolvePatientId(userId);
+
+    const appointment = await this.appointmentRepo.findOne({
+      where: { id: appointmentId },
+      relations: { patient: true, doctor: true },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException('Appointment does not exist');
+    }
+
+    if (appointment.patient.id !== patientId) {
+      throw new NotFoundException('Appointment does not exist');
+    }
+
+    if (appointment.status === AppointmentStatus.CANCELLED) {
+      throw new BadRequestException(
+        'Cannot reschedule a cancelled appointment',
+      );
+    }
+
+    if (isWithinCutoff(appointment.date, appointment.startTime)) {
+      throw new BadRequestException(
+        'Cannot reschedule within 30 minutes of the appointment',
+      );
+    }
+
+    const newDateTime = new Date(`${dto.date}T${dto.startTime}:00`);
+    if (newDateTime.getTime() <= Date.now()) {
+      throw new BadRequestException('Cannot reschedule to a past time');
+    }
+
+    const isSameSlot =
+      appointment.date === dto.date &&
+      normalizeTime(appointment.startTime) === dto.startTime &&
+      normalizeTime(appointment.endTime) === dto.endTime;
+    if (isSameSlot) {
+      throw new BadRequestException('This is already your current slot');
+    }
+
+    const doctor = appointment.doctor;
+
+    if (doctor.schedulingType === SchedulingType.STREAM) {
+      return this.dataSource.transaction(async (manager) => {
+        const { slots } = await this.recurringService.getSlotsForDoctorId(
+          doctor.id,
+          dto.date,
+        );
+
+        const matchesGeneratedSlot = slots?.some(
+          (s) =>
+            normalizeTime(s.startTime) === dto.startTime &&
+            normalizeTime(s.endTime) === dto.endTime,
+        );
+        if (!matchesGeneratedSlot) {
+          throw new BadRequestException('Invalid slot for this doctor/date');
+        }
+
+        const conflicting = await this.appointmentRepo.findOne({
+          where: {
+            doctor: { id: doctor.id },
+            date: dto.date,
+            startTime: dto.startTime,
+            status: Not(AppointmentStatus.CANCELLED),
+            id: Not(appointment.id),
+          },
+        });
+
+        if (conflicting) {
+          const suggestion = await this.findNextAvailable(
+            doctor.id,
+            dto.date,
+            doctor.schedulingType,
+          );
+          throw new ConflictException({
+            message: 'This slot is already booked',
+            suggestedSlot: suggestion,
+          });
+        }
+
+        appointment.date = dto.date;
+        appointment.startTime = dto.startTime;
+        appointment.endTime = dto.endTime;
+        await manager.save(appointment);
+
+        return { data: appointment };
+      });
+    }
+
+    if (doctor.schedulingType === SchedulingType.WAVE) {
+      return this.dataSource.transaction(async (manager) => {
+        const { timeWindows } = await this.recurringService.getSlotsForDoctorId(
+          doctor.id,
+          dto.date,
+        );
+
+        const matchesWindow = timeWindows?.some((w) => {
+          const [winStart, winEnd] = w.duration.split(' - ').map(normalizeTime);
+          return winStart === dto.startTime && winEnd === dto.endTime;
+        });
+
+        if (!matchesWindow) {
+          throw new BadRequestException(
+            'Invalid time slot for this date/doctor',
+          );
+        }
+
+        const existingCount = await manager.count(Appointment, {
+          where: {
+            doctor: { id: doctor.id },
+            date: dto.date,
+            startTime: dto.startTime,
+            endTime: dto.endTime,
+            status: Not(AppointmentStatus.CANCELLED),
+            id: Not(appointment.id),
+          },
+        });
+
+        if (existingCount >= doctor.maxAppointments) {
+          const suggestion = await this.findNextAvailable(
+            doctor.id,
+            dto.date,
+            doctor.schedulingType,
+          );
+          throw new ConflictException({
+            message: 'This slot is already booked',
+            suggestedSlot: suggestion, 
+          });
+        }
+
+        appointment.date = dto.date;
+        appointment.startTime = dto.startTime;
+        appointment.endTime = dto.endTime;
+        appointment.tokenNumber = existingCount + 1;
+        await manager.save(appointment);
+
+        return { data: appointment };
+      });
+    }
+  }
+
+  async findNextAvailable(
+    doctorId: string,
+    fromDate: string,
+    schedulingType: SchedulingType,
+    maxDaysToCheck = 14,
+  ) {
+    let checkDate = fromDate;
+
+    for (let i = 0; i < maxDaysToCheck; i++) {
+      const result = await this.recurringService.getSlotsForDoctorId(
+        doctorId,
+        checkDate,
+      );
+
+      if (schedulingType === SchedulingType.STREAM && result.slots?.length) {
+        for (const slot of result.slots) {
+          const conflicting = await this.appointmentRepo.findOne({
+            where: {
+              doctor: { id: doctorId },
+              date: checkDate,
+              startTime: slot.startTime,
+              status: Not(AppointmentStatus.CANCELLED),
+            },
+          });
+          if (!conflicting) {
+            return {
+              date: checkDate,
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+            };
+          }
+        }
+      }
+
+      if (
+        schedulingType === SchedulingType.WAVE &&
+        result.timeWindows?.length
+      ) {
+        for (const window of result.timeWindows) {
+          const [start, end] = window.duration.split(' - ').map(normalizeTime);
+          const count = await this.appointmentRepo.count({
+            where: {
+              doctor: { id: doctorId },
+              date: checkDate,
+              startTime: start,
+              status: Not(AppointmentStatus.CANCELLED),
+            },
+          });
+          const doctor = await this.doctorRepo.findOne({
+            where: { id: doctorId },
+          });
+          if (count < (doctor?.maxAppointments ?? 0)) {
+            return { date: checkDate, startTime: start, endTime: end };
+          }
+        }
+      }
+
+      checkDate = addOneDay(checkDate); 
+    }
+
+    return null; // nothing found within the lookahead window
   }
 
   private async resolvePatientId(userId: string): Promise<string> {
