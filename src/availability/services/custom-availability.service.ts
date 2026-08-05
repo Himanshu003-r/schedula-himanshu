@@ -29,7 +29,7 @@ export class CustomAvailabilityService {
         'Start time should not be greater than end time',
       );
     }
-const doctorId = await this.resolveDoctorId(userId)
+    const doctorId = await this.resolveDoctorId(userId);
     const existingSlots = await this.customRepo.find({
       where: { doctor: { id: doctorId }, date },
     });
@@ -52,7 +52,7 @@ const doctorId = await this.resolveDoctorId(userId)
   }
 
   async findAllOverrides(userId: string) {
-    const doctorId = await this.resolveDoctorId(userId)
+    const doctorId = await this.resolveDoctorId(userId);
     const overrides = await this.customRepo.find({
       where: { doctor: { id: doctorId } },
     });

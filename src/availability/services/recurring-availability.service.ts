@@ -171,7 +171,7 @@ export class RecurringAvailabilityService {
       };
     }
 
-    if (doctor.schedulingType === SchedulingType.STREAM) {
+    if (doctor.schedulingType === SchedulingType.WAVE) {
       const slots = windows.flatMap((w) =>
         generateStreamSlot(
           w.startTime,
@@ -180,7 +180,7 @@ export class RecurringAvailabilityService {
           doctor.bufferTime,
         ),
       );
-      return { schedulingType: 'stream', slots };
+      return { schedulingType: 'wave', slots , capacity: doctor.maxAppointments };
     }
 
     const timeWindows = windows.map((w) => ({
@@ -188,7 +188,7 @@ export class RecurringAvailabilityService {
       capacity: doctor.maxAppointments,
       available: doctor.maxAppointments,
     }));
-    return { schedulingType: 'wave', timeWindows };
+    return { schedulingType: 'stream', timeWindows };
   }
 
   async getSlotsForDate(userId: string, date: string) {
