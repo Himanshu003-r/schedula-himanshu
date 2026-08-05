@@ -5,18 +5,18 @@ export class SetSchedulingConfigDto {
   @IsEnum(SchedulingType)
   schedulingType: SchedulingType;
 
-  @ValidateIf((o) => o.schedulingType === SchedulingType.STREAM)
+  @ValidateIf((o) => o.schedulingType === SchedulingType.WAVE)
   @IsInt()
   @Min(1)
   slotDuration?: number;
 
-  @ValidateIf((o) => o.schedulingType === SchedulingType.STREAM)
+  @ValidateIf((o) => o.schedulingType === SchedulingType.WAVE)
   @IsOptional()
   @IsInt()
   @Min(0)
   bufferTime?: number;
 
-  @ValidateIf((o) => o.schedulingType === SchedulingType.WAVE)
+  // @ValidateIf((o) => o.schedulingType === SchedulingType.WAVE)
   @IsInt()
   @Min(1)
   maxAppointments?: number;

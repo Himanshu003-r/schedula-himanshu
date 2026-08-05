@@ -56,3 +56,17 @@ export function isValidRange(startTime: string, endTime: string): boolean {
 export function normalizeTime(time: string): string {
   return time.slice(0, 5);
 }
+
+// To check the 30 min cutoff rule
+export function isWithinCutoff(date: string, startTime: string, cutoffMinutes = 30): boolean {
+  const appointmentTime = new Date(`${date}T${startTime}:00`).getTime();
+  const cutoffTime = appointmentTime - cutoffMinutes * 60 * 1000;
+  return Date.now() >= cutoffTime;
+}
+
+// Increase the day by one if current days slot are fully booked
+export function addOneDay(dateStr: string): string {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0]; // back to 'YYYY-MM-DD'
+}
