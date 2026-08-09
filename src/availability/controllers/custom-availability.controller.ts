@@ -25,9 +25,14 @@ export class CustomAvailabilityController {
     return this.customService.findAllOverrides(user.sub);
   }
 
-  @Patch(':id')
+  @Patch('/expand/:id')
   update(@currentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateCustomAvailabilityDto) {
     return this.customService.updateOverride(user.sub, id, dto);
+  }
+
+  @Patch('/shrink/:id')
+  updateShrink(@currentUser() user:JwtPayload, @Param('id') id:string, @Body() dto: UpdateCustomAvailabilityDto){
+    return this.customService.shrinkCustomAvailability(user.sub,id,dto)
   }
 
   @Delete(':id')

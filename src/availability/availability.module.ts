@@ -7,9 +7,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CustomAvailability } from './entities/custom-availability.entity';
 import { RecurringAvailabilityService } from './services/recurring-availability.service';
 import { Doctor } from 'src/doctor/entities/doctor.entity';
+import { Appointment } from 'src/appointment/entities/appointment.entity';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([RecurringAvailability,CustomAvailability,Doctor])],
+  imports:[TypeOrmModule.forFeature([RecurringAvailability,CustomAvailability,Doctor,Appointment])],
   providers: [RecurringAvailabilityService,CustomAvailabilityService],
   controllers: [RecurringAvailabilityController,CustomAvailabilityController],
   exports: [RecurringAvailabilityService, CustomAvailabilityService]
