@@ -58,7 +58,11 @@ export function normalizeTime(time: string): string {
 }
 
 // To check the 30 min cutoff rule
-export function isWithinCutoff(date: string, startTime: string, cutoffMinutes = 30): boolean {
+export function isWithinCutoff(
+  date: string,
+  startTime: string,
+  cutoffMinutes = 30,
+): boolean {
   const appointmentTime = new Date(`${date}T${startTime}:00`).getTime();
   const cutoffTime = appointmentTime - cutoffMinutes * 60 * 1000;
   return Date.now() >= cutoffTime;
@@ -70,3 +74,30 @@ export function addOneDay(dateStr: string): string {
   d.setDate(d.getDate() + 1);
   return d.toISOString().split('T')[0]; // back to 'YYYY-MM-DD'
 }
+
+// Fetches the slots that were removed from original slots
+export function getRemovedChunks(
+  oldStartTime: string,
+  oldEndTime: string,
+  newStartTime: string,
+  newEndTime: string,
+): { start: string; end: string }[] {
+  const chunks: { start: string; end: string }[] = [];
+
+  if (toMinutes(newStartTime) > toMinutes(oldStartTime)) {
+    chunks.push({ start: oldStartTime, end: newStartTime });
+  }
+
+  if (toMinutes(newEndTime) < toMinutes(oldEndTime)) {
+    chunks.push({ start: newEndTime, end: oldEndTime });
+  }
+
+  return chunks;
+}
+
+// Checks for data within removed slots
+export function isWithinChunk(appointmentStart: string, chunk:{start:string,end:string}):boolean{
+const t = toMinutes(appointmentStart)
+return t>= toMinutes(chunk.start) && t < toMinutes(chunk.end)
+}
+

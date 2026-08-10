@@ -67,10 +67,12 @@ export class RecurringAvailabilityService {
   }
 
   async updateRecurring(
-    doctorId: string,
+    userId: string,
     id: string,
     dto: UpdateRecurringAvailabilityDto,
   ) {
+    const doctorId = await this.resolveDoctorId(userId);
+
     const slot = await this.recurringRepo.findOne({
       where: { id },
       relations: { doctor: true },
@@ -180,7 +182,11 @@ export class RecurringAvailabilityService {
           doctor.bufferTime,
         ),
       );
-      return { schedulingType: 'wave', slots , capacity: doctor.maxAppointments };
+      return {
+        schedulingType: 'wave',
+        slots,
+        capacity: doctor.maxAppointments,
+      };
     }
 
     const timeWindows = windows.map((w) => ({

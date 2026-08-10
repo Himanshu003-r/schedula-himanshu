@@ -1,7 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
-import { toMinutes } from './time.util';
+import { normalizeTime, toMinutes } from './time.util';
 
-// Conversion of Minutes to Time 
+// Conversion of Minutes to Time
 // e.g. 600 ---> 10:00
 
 function minutesToTime(mins: number): string {
@@ -25,14 +25,37 @@ export function generateStreamSlot(
   const end = toMinutes(endTime);
   const step = slotDuration + bufferTime;
 
-  const slots : { startTime: string; endTime: string }[] = [];
- 
+  const slots: { startTime: string; endTime: string }[] = [];
+
   let cursor = start;
 
   while (cursor + slotDuration <= end) {
-    slots.push({startTime:minutesToTime(cursor), endTime:minutesToTime(cursor + slotDuration)})
-    cursor+=step
+    slots.push({
+      startTime: minutesToTime(cursor),
+      endTime: minutesToTime(cursor + slotDuration),
+    });
+    cursor += step;
   }
-  
-  return slots
+
+  return slots;
 }
+
+// type Slot = {
+//     startTime: Date;
+//     endTime: Date;
+// };
+
+// export function findRemovedSlots(oldSlots: Slot[], newSlots: Slot[]) {
+//   const newSlot = new Set(
+//     newSlots.map((slot) => {
+//       return `${slot.startTime}-${slot.endTime}`;
+//     }),
+//   );
+//   const removedSlots = [];
+//   for (const oldSlot of oldSlots) {
+//     const oldKey = `${oldSlot.startTime}-${oldSlot.endTime}`;
+
+//     if (!newSlot.has(oldKey)) removedSlots.push(oldSlot);
+//   }
+//   return removedSlots;
+// }
