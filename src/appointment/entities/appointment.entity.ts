@@ -34,7 +34,7 @@ export class Appointment {
   endTime: string;
 
   @Column({ nullable: true })
-  tokenNumber: number; // wave only
+  tokenNumber: number;
 
   @Column({
     type: 'enum',
@@ -42,6 +42,18 @@ export class Appointment {
     default: AppointmentStatus.BOOKED,
   })
   status: AppointmentStatus;
+
+  @Column({ default: false })
+  wasAutoReschduled: boolean;
+
+  @Column({ type: 'date', nullable: true })
+  previousDate: string;
+
+  @Column({ type: 'time', nullable: true })
+  previousStartTime: string;
+
+  @Column({ type: 'time', nullable: true })
+  previousEndTime: string;
 
   @CreateDateColumn()
   createdAt: Date;
