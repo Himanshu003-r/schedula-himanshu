@@ -11,7 +11,7 @@ export class NotificationService {
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
     @InjectRepository(Patient)
-    private readonly patientRepo: Repository<Patient>
+    private readonly patientRepo: Repository<Patient>,
   ) {}
 
   async create(
@@ -52,7 +52,7 @@ export class NotificationService {
     });
   }
 
-  async markAsRead(userId: string,notificationId: string) {
+  async markAsRead(userId: string, notificationId: string) {
     const patient = await this.patientRepo.findOne({
       where: { user: { id: userId } },
     });
@@ -70,5 +70,25 @@ export class NotificationService {
     notification.isRead = true;
     await this.notificationRepo.save(notification);
     return { data: notification };
+  }
+
+  async deleteNotification(userId: string, notificationId: string) {
+    const patient = await this.patientRepo.findOne({
+      where: { user: { id: userId } },
+    });
+
+    if (!patient) {
+      throw new NotFoundException('Patient does not exist');
+    }
+
+    const notification = await this.notificationRepo.findOne({
+      where: { id: notificationId, patient: { id: patient.id } },
+    });
+
+    if (!notification) throw new NotFoundException('Notification not found');
+
+    await this.notificationRepo.delete(notification.id);
+
+    return { message: 'Notification deleted successfully!' };
   }
 }

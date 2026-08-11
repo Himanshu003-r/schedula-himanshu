@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { AuthGuard } from '@nestjs/passport';
@@ -19,7 +26,12 @@ export class NotificationController {
   }
 
   @Patch(':id')
-  read(@currentUser() user: JwtPayload, @Param('id') id: string){
-   return this.notificationService.markAsRead(user.sub, id)
+  read(@currentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.notificationService.markAsRead(user.sub, id);
+  }
+
+  @Delete(':id')
+  deleteNotification(@currentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.notificationService.deleteNotification(user.sub, id);
   }
 }
