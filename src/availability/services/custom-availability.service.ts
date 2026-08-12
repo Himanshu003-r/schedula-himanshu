@@ -27,6 +27,8 @@ import {
 } from 'src/appointment/entities/appointment.entity';
 import { RecurringAvailabilityService } from './recurring-availability.service';
 import { RecurringAvailability } from '../entities/recurring-availability.entity';
+import { NotificationService } from 'src/notification/notification.service';
+import { NotificationType } from 'src/notification/entities/notification.entity';
 
 @Injectable()
 export class CustomAvailabilityService {
@@ -42,6 +44,7 @@ export class CustomAvailabilityService {
     private readonly dataSource: DataSource,
     @Inject(forwardRef(() => RecurringAvailabilityService))
     private readonly recurringService: RecurringAvailabilityService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async createOverride(userId: string, dto: CreateCustomAvailabilityDto) {
@@ -87,7 +90,7 @@ export class CustomAvailabilityService {
     id: string,
     dto: UpdateCustomAvailabilityDto,
   ) {
-    const doctorId = await this.resolveDoctorId(userId)
+    const doctorId = await this.resolveDoctorId(userId);
     const slot = await this.customRepo.findOne({
       where: { id },
       relations: { doctor: true },
@@ -209,6 +212,17 @@ export class CustomAvailabilityService {
         appt.startTime = r.newStartTime;
         appt.endTime = r.newEndTime;
         await manager.save(appt);
+
+        await this.notificationService.create(
+          manager,
+          appt.patient.id,
+          appt.id,
+          NotificationType.APPOINTMENT_RESCHEDULED,
+          r.newDate,
+          r.newStartTime,
+          'Appointment Rescheduled',
+          `Your appointment has been rescheduled to ${r.newDate} at ${r.newStartTime}.`,
+        );
       }
 
       manager.merge(CustomAvailability, slots, dto);
@@ -242,6 +256,7 @@ export class CustomAvailabilityService {
         date,
         status: Not(AppointmentStatus.CANCELLED),
       },
+      relations:{patient: true}
     });
 
     return appointments.filter((appt) =>
@@ -311,14 +326,14 @@ export class CustomAvailabilityService {
             toMinutes(slot.startTime) <= toMinutes(fromTime)
           )
             continue;
-          // preventing from allocating the shrink slots 
+          // preventing from allocating the shrink slots
           if (
             checkDate === anchorDate &&
             removedChunks.some((c) => isWithinChunk(slot.startTime, c))
           ) {
             continue;
           }
- 
+
           const reservedCountThisOp = alreadyReserved.filter(
             (r) => r.date === checkDate && r.startTime === slot.startTime,
           ).length;
