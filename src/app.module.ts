@@ -10,6 +10,7 @@ import { DoctorModule } from './doctor/doctor.module';
 import { AvailabilityModule } from './availability/availability.module';
 import { AppointmentModule } from './appointment/appointment.module';
 import { HealthModule } from './health/health.module';
+import { NotificationModule } from './notification/notification.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -35,7 +36,8 @@ import { HealthModule } from './health/health.module';
     DoctorModule,
     AvailabilityModule,
     AppointmentModule,
-    HealthModule
+    HealthModule,
+    NotificationModule
   ],
   controllers: [AppController],
   providers: [AppService],
