@@ -27,7 +27,7 @@ import {
 } from 'src/appointment/entities/appointment.entity';
 import { RecurringAvailabilityService } from './recurring-availability.service';
 import { RecurringAvailability } from '../entities/recurring-availability.entity';
-import { NotificationService } from 'src/notification/notification.service';
+import { NotificationService } from 'src/notification/services/notification.service';
 import { NotificationType } from 'src/notification/entities/notification.entity';
 
 @Injectable()
