@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Notification, NotificationType } from './entities/notification.entity';
+import { Notification, NotificationType } from '../entities/notification.entity';
 import { EntityManager, Repository } from 'typeorm';
 import { Patient } from 'src/patient/entities/patient.entity';
 import { Appointment } from 'src/appointment/entities/appointment.entity';
@@ -22,7 +22,7 @@ export class NotificationService {
     referenceDate: string,
     referenceStartTime: string,
     title: string,
-    message: string,
+    message: string
   ) {
     const notification = manager.create(Notification, {
       patient: { id: patientId } as Patient,
@@ -31,10 +31,34 @@ export class NotificationService {
       referenceDate,
       referenceStartTime,
       title,
-      message,
+      message
     });
 
     return manager.save(notification);
+  }
+
+  async createDirect(
+    patientId: string,
+    appointmentId: string,
+    type: NotificationType,
+    referenceDate: string,
+    referenceStartTime: string,
+    title: string,
+    message: string,
+    reminderOffsetMinutes?: number
+  ){
+    const notification = this.notificationRepo.create({
+      patient: {id: patientId} as Patient,
+      appointment: {id: appointmentId} as Appointment,
+      type,
+      referenceDate,
+      referenceStartTime,
+      title,
+      message,
+      reminderOffsetMinutes
+    })
+
+    return this.notificationRepo.save(notification)
   }
 
   async getAllNotifications(userId: string) {

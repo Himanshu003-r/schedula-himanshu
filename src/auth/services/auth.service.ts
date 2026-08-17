@@ -43,7 +43,12 @@ export class AuthService {
     await this.userRepo.save(user);
 
     return {
-      data: { id: user.id, email: user.email, name: user.name, role: user.role },
+      data: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
       message: 'User registered successfully',
     };
   }
@@ -53,9 +58,14 @@ export class AuthService {
 
     const user = await this.userRepo.findOne({
       where: { email },
-      select:{
-        password: true
-      }
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        password: true,
+        role: true,
+        createdAt: true,
+      },
     });
 
     if (!user) {
