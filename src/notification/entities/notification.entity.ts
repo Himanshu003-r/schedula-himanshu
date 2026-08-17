@@ -13,10 +13,11 @@ export enum NotificationType {
   APPOINTMENT_BOOKED = 'appointment_booked',
   APPOINTMENT_CANCELLED = 'appointment_cancelled',
   APPOINTMENT_RESCHEDULED = 'appointment_rescheduled',
+  APPOINTMENT_REMINDER = 'appointment_reminder',
 }
 
 @Entity('notifications')
-@Unique(['appointment', 'type', 'referenceDate', 'referenceStartTime'])
+@Unique(['appointment', 'type', 'referenceDate', 'referenceStartTime','reminderOffsetMinutes'])
 export class Notification {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -44,6 +45,9 @@ export class Notification {
 
   @Column({ default: false })
   isRead: boolean;
+
+  @Column({ nullable: true })
+  reminderOffsetMinutes: number;
 
   @CreateDateColumn()
   createdAt: Date;
